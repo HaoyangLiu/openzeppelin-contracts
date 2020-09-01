@@ -3,6 +3,7 @@ pragma solidity ^0.5.0;
 import "../../GSN/Context.sol";
 import "./IERC20.sol";
 import "../../math/SafeMath.sol";
+import "../ownership/Ownable.sol"
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -28,7 +29,7 @@ import "../../math/SafeMath.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20 is Context, IERC20 {
+contract BEP20Token is Context, IBEP20, Ownable {
     using SafeMath for uint256;
 
     mapping (address => uint256) private _balances;
@@ -36,58 +37,99 @@ contract ERC20 is Context, IERC20 {
     mapping (address => mapping (address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
+    uint8 public _decimals;
+    string public _symbol;
+    string public _name;
+
+    constructor() public {
+        _name = "BTCB Token";
+        _symbol = "BTCB";
+        _decimals = 18;
+        _totalSupply = 9001000000000000000000;
+        _balances[msg.sender] = _totalSupply;
+
+        emit Transfer(address(0), msg.sender, _totalSupply);
+    }
 
     /**
-     * @dev See {IERC20-totalSupply}.
+     * @dev Returns the bep token owner.
      */
-    function totalSupply() public view returns (uint256) {
+    function getOwner() external view returns (address) {
+        return owner();
+    }
+
+    /**
+     * @dev Returns the token decimals.
+     */
+    function decimals() external view returns (uint8) {
+        return _decimals;
+    }
+
+    /**
+     * @dev Returns the token symbol.
+     */
+    function symbol() external view returns (string memory) {
+        return _symbol;
+    }
+
+    /**
+    * @dev Returns the token name.
+    */
+    function name() external view returns (string memory) {
+        return _name;
+    }
+
+    /**
+     * @dev See {BEP20-totalSupply}.
+     */
+    function totalSupply() external view returns (uint256) {
         return _totalSupply;
     }
 
     /**
-     * @dev See {IERC20-balanceOf}.
+     * @dev See {BEP20-balanceOf}.
      */
-    function balanceOf(address account) public view returns (uint256) {
+    function balanceOf(address account) external view returns (uint256) {
         return _balances[account];
     }
 
     /**
-     * @dev See {IERC20-transfer}.
+     * @dev See {BEP20-transfer}.
      *
      * Requirements:
      *
      * - `recipient` cannot be the zero address.
      * - the caller must have a balance of at least `amount`.
      */
-    function transfer(address recipient, uint256 amount) public returns (bool) {
+    function transfer(address recipient, uint256 amount) external returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
     /**
-     * @dev See {IERC20-allowance}.
+     * @dev See {BEP20-allowance}.
      */
-    function allowance(address owner, address spender) public view returns (uint256) {
+    function allowance(address owner, address spender) external view returns (uint256) {
         return _allowances[owner][spender];
     }
 
     /**
-     * @dev See {IERC20-approve}.
+     * @dev See {BEP20-approve}.
      *
      * Requirements:
      *
      * - `spender` cannot be the zero address.
      */
-    function approve(address spender, uint256 amount) public returns (bool) {
+    function approve(address spender, uint256 amount) external returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
 
     /**
-     * @dev See {IERC20-transferFrom}.
+     * @dev See {BEP20-transferFrom}.
      *
      * Emits an {Approval} event indicating the updated allowance. This is not
-     * required by the EIP. See the note at the beginning of {ERC20};
+     * required by the EIP. See the note at the beginning of {BEP20};
      *
      * Requirements:
      * - `sender` and `recipient` cannot be the zero address.
@@ -95,9 +137,9 @@ contract ERC20 is Context, IERC20 {
      * - the caller must have allowance for `sender`'s tokens of at least
      * `amount`.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
+        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "BEP20: transfer amount exceeds allowance"));
         return true;
     }
 
@@ -105,7 +147,7 @@ contract ERC20 is Context, IERC20 {
      * @dev Atomically increases the allowance granted to `spender` by the caller.
      *
      * This is an alternative to {approve} that can be used as a mitigation for
-     * problems described in {IERC20-approve}.
+     * problems described in {BEP20-approve}.
      *
      * Emits an {Approval} event indicating the updated allowance.
      *
@@ -122,7 +164,7 @@ contract ERC20 is Context, IERC20 {
      * @dev Atomically decreases the allowance granted to `spender` by the caller.
      *
      * This is an alternative to {approve} that can be used as a mitigation for
-     * problems described in {IERC20-approve}.
+     * problems described in {BEP20-approve}.
      *
      * Emits an {Approval} event indicating the updated allowance.
      *
@@ -133,7 +175,7 @@ contract ERC20 is Context, IERC20 {
      * `subtractedValue`.
      */
     function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
-        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "BEP20: decreased allowance below zero"));
         return true;
     }
 
@@ -152,10 +194,10 @@ contract ERC20 is Context, IERC20 {
      * - `sender` must have a balance of at least `amount`.
      */
     function _transfer(address sender, address recipient, uint256 amount) internal {
-        require(sender != address(0), "ERC20: transfer from the zero address");
-        require(recipient != address(0), "ERC20: transfer to the zero address");
+        require(sender != address(0), "BEP20: transfer from the zero address");
+        require(recipient != address(0), "BEP20: transfer to the zero address");
 
-        _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
+        _balances[sender] = _balances[sender].sub(amount, "BEP20: transfer amount exceeds balance");
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
     }
@@ -170,7 +212,7 @@ contract ERC20 is Context, IERC20 {
      * - `to` cannot be the zero address.
      */
     function _mint(address account, uint256 amount) internal {
-        require(account != address(0), "ERC20: mint to the zero address");
+        require(account != address(0), "BEP20: mint to the zero address");
 
         _totalSupply = _totalSupply.add(amount);
         _balances[account] = _balances[account].add(amount);
@@ -189,9 +231,9 @@ contract ERC20 is Context, IERC20 {
      * - `account` must have at least `amount` tokens.
      */
     function _burn(address account, uint256 amount) internal {
-        require(account != address(0), "ERC20: burn from the zero address");
+        require(account != address(0), "BEP20: burn from the zero address");
 
-        _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
+        _balances[account] = _balances[account].sub(amount, "BEP20: burn amount exceeds balance");
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
@@ -210,8 +252,8 @@ contract ERC20 is Context, IERC20 {
      * - `spender` cannot be the zero address.
      */
     function _approve(address owner, address spender, uint256 amount) internal {
-        require(owner != address(0), "ERC20: approve from the zero address");
-        require(spender != address(0), "ERC20: approve to the zero address");
+        require(owner != address(0), "BEP20: approve from the zero address");
+        require(spender != address(0), "BEP20: approve to the zero address");
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
@@ -225,6 +267,6 @@ contract ERC20 is Context, IERC20 {
      */
     function _burnFrom(address account, uint256 amount) internal {
         _burn(account, amount);
-        _approve(account, _msgSender(), _allowances[account][_msgSender()].sub(amount, "ERC20: burn amount exceeds allowance"));
+        _approve(account, _msgSender(), _allowances[account][_msgSender()].sub(amount, "BEP20: burn amount exceeds allowance"));
     }
 }
